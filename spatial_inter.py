@@ -12,6 +12,7 @@ import numpy
 from matplotlib import pyplot as pl
 import matplotlib.image as mpimg
 
+inf = r"/home/mirandalv/Downloads/del.tif"
 
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
