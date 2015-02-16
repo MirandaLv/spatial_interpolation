@@ -12,19 +12,19 @@ import numpy
 from matplotlib import pyplot as pl
 import matplotlib.image as mpimg
 
-inf = r"/home/mirandalv/Downloads/del.tif"
+"""
+opts, args= getopt.getopt(sys.argv[1:], "ho:v", ["help", "output="]) #Need to polish the inputs later
+inf = args[0]
+outf = args[1]
+num = args[2]
+"""
+inf = r"/home/mirandalv/Downloads/del.tif" 
+outf = r"/home/mirandalv/Downloads/del_out.tif"
 
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
     band = raster.GetRasterBand(1)
     return band.ReadAsArray()
-
-newarray = raster2array(inf)
-
-#gp = GaussianProcess(theta0 = 0.1, thetaL = .001, thetaU = 1., nugget = 0.01)
-
-#gp.fit(X=newarray, y = )
-
 
 #----
 # Create a new array canvas for the output
@@ -52,6 +52,43 @@ def newarray(old_array, new_array, num):
 	return new_array
 
 
+
+def originrst(rasterfn):
+	rstdic = {}
+	raster = gdal.Open(rasterfn)
+	geotransform = raster.GetGeoTransform()
+	originX = geotransform[0]
+	originY = geotransform[3]
+	pixelWidth = geotransform[1]
+	pixelHeight = geotransform[5]
+	rstdic["originX"] = originX
+	rstdic["originY"] = originY
+	rstdic["pxWidth"] = pixelWidth
+	rstdic["pxHeight"] = pixelHeight
+	return rstdic
+
+
+def array2raster(newRasterfn,oldrstdic,inarray,num): 
+	# num is how many rows/cols the original pixel size divided by
+	# We can make num as an constant number
+    cols = inarray.shape[1]
+    rows = inarray.shape[0]
+    originX = oldrstdic["originX"]
+    originY = oldrstdic["originY"]
+    pixelWidth = oldrstdic["pxWidth"]/num
+    pixelHeight = oldrstdic["pxHeight"]/num
+    
+    driver = gdal.GetDriverByName('GTiff')
+    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Float32)
+    outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+    outband = outRaster.GetRasterBand(1)
+    outband.WriteArray(inarray)
+    outRasterSRS = osr.SpatialReference()
+    outRasterSRS.ImportFromEPSG(4326)
+    outRaster.SetProjection(outRasterSRS.ExportToWkt())
+    outband.FlushCache()
+
+"""
 def array2raster(rasterfn,newRasterfn,array):
     raster = gdal.Open(rasterfn)
     geotransform = raster.GetGeoTransform()
@@ -71,19 +108,7 @@ def array2raster(rasterfn,newRasterfn,array):
     outRasterSRS.ImportFromWkt(raster.GetProjectionRef())
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
-			
-# add the coordinates for the new array
-# sample coordinates
-def get_coordinate(inrst, outrst, num):
-	raster = gdal.Open(inrst)
-	geotransform = raster.GetGeoTransform()
-	originX = geotransform[0]
-	originY = geotransform[3]
-	pixelWidth = geotransform[1]
-	pixelHeight = geotransform[5]
-	
-	newpixelWidth = pixelWidth/num
-	newpixelHeight = pixelHeight/num
+"""
 
 
 in_array = raster2array(inf)
@@ -112,25 +137,14 @@ gp.fit(X=numpy.column_stack([rr[vals],cc[vals]]), y=out_array[vals])
 rr_cc_as_cols = numpy.column_stack([rr.flatten(), cc.flatten()])
 interpolated = gp.predict(rr_cc_as_cols).reshape(out_array.shape)
 
-
-
+oldrst = originrst(inf)
+array2raster(outf,oldrst,interpolated,11)
 
 
 #imgplot_out = pl.imshow(interpolated)
 #imgplot_in = pl.imshow(in_array)
 #imgplot_more = pl.imshow(out_array)
 #pl.show()
-
-
-
-
-
-
-
-
-
-
-
 
 
 
