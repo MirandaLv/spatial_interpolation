@@ -21,13 +21,15 @@ num = args[2]
 inf = r"/home/mirandalv/Downloads/del.tif" 
 outf = r"/home/mirandalv/Downloads/del_out.tif"
 
+#----
+# convert raster to an array
 def raster2array(rasterfn):
     raster = gdal.Open(rasterfn)
     band = raster.GetRasterBand(1)
     return band.ReadAsArray()
 
 #----
-# Create a new array canvas for the output
+# Create a new non value array canvas for the output
 
 def nanarray(old_r, old_c, num):
 	new_r = old_r * num
@@ -36,6 +38,8 @@ def nanarray(old_r, old_c, num):
 	newarray[:] = numpy.nan
 	return newarray
 
+#----
+# write value to output array
 def newarray(old_array, new_array, num):
 	new_r = new_array.shape[0]
 	new_c = new_array.shape[1]
@@ -51,8 +55,8 @@ def newarray(old_array, new_array, num):
 		start_r += num
 	return new_array
 
-
-
+#----
+# information of input raster, output is an dictionary saved original X,Y and width&height of input raster
 def originrst(rasterfn):
 	rstdic = {}
 	raster = gdal.Open(rasterfn)
@@ -67,7 +71,8 @@ def originrst(rasterfn):
 	rstdic["pxHeight"] = pixelHeight
 	return rstdic
 
-
+#----
+# convert interpolated array to a raster file
 def array2raster(newRasterfn,oldrstdic,inarray,num): 
 	# num is how many rows/cols the original pixel size divided by
 	# We can make num as an constant number
@@ -110,17 +115,13 @@ def array2raster(rasterfn,newRasterfn,array):
     outband.FlushCache()
 """
 
-
+#---
+# 
 in_array = raster2array(inf)
 in_rnum = in_array.shape[0]
 in_cnum = in_array.shape[1]
-new_nanarray = nanarray(in_rnum, in_cnum, 11)
-out_array = newarray(in_array, new_nanarray, 11)
-
-"""
-print in_rnum, in_cnum
-print out_array.shape[0], out_array.shape[1]
-"""
+new_nanarray = nanarray(in_rnum, in_cnum, 5)
+out_array = newarray(in_array, new_nanarray, 5)
 
 
 r = numpy.linspace(0, 1, out_array.shape[1])
@@ -137,8 +138,10 @@ gp.fit(X=numpy.column_stack([rr[vals],cc[vals]]), y=out_array[vals])
 rr_cc_as_cols = numpy.column_stack([rr.flatten(), cc.flatten()])
 interpolated = gp.predict(rr_cc_as_cols).reshape(out_array.shape)
 
+#--
+# function call to produce output raster
 oldrst = originrst(inf)
-array2raster(outf,oldrst,interpolated,11)
+array2raster(outf,oldrst,interpolated,5)
 
 
 #imgplot_out = pl.imshow(interpolated)
@@ -147,19 +150,9 @@ array2raster(outf,oldrst,interpolated,11)
 #pl.show()
 
 
-
-
-
 #---
-# raster to center point shapefile
+# output raster file adjustment
 
 
-#---
-# point shapefile using kriging to predict other locations
-
-
-
-#---
-# raster t
 
 
