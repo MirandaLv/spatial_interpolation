@@ -11,6 +11,7 @@ from sklearn.gaussian_process import GaussianProcess
 import numpy
 from matplotlib import pyplot as pl
 import matplotlib.image as mpimg
+import scipy.interpolate as interpolate
 
 """
 opts, args= getopt.getopt(sys.argv[1:], "ho:v", ["help", "output="]) #Need to polish the inputs later
@@ -120,8 +121,8 @@ def array2raster(rasterfn,newRasterfn,array):
 in_array = raster2array(inf)
 in_rnum = in_array.shape[0]
 in_cnum = in_array.shape[1]
-new_nanarray = nanarray(in_rnum, in_cnum, 5)
-out_array = newarray(in_array, new_nanarray, 5)
+new_nanarray = nanarray(in_rnum, in_cnum, 11)
+out_array = newarray(in_array, new_nanarray, 11)
 
 
 r = numpy.linspace(0, 1, out_array.shape[1])
@@ -130,10 +131,16 @@ c = numpy.linspace(0, 1, out_array.shape[0])
 rr, cc = numpy.meshgrid(r, c)
 vals = ~numpy.isnan(out_array)
 
-
+#---
+# scipy's implementaion of radial basis function interpolation
+"""
+f = interpolate.Rbf(rr[vals], cc[vals], out_array[vals], function='linear')
+interpolated = f(rr, cc)
+"""
 #---
 # Gaussian Process Regression
-gp = GaussianProcess(theta0=0.1, thetaL=.001, thetaU=1., nugget=0.01)
+
+gp = GaussianProcess(corr='cubic', theta0=0.1, thetaL=.001, thetaU=1., nugget=0.01)
 gp.fit(X=numpy.column_stack([rr[vals],cc[vals]]), y=out_array[vals])
 rr_cc_as_cols = numpy.column_stack([rr.flatten(), cc.flatten()])
 interpolated = gp.predict(rr_cc_as_cols).reshape(out_array.shape)
@@ -141,7 +148,7 @@ interpolated = gp.predict(rr_cc_as_cols).reshape(out_array.shape)
 #--
 # function call to produce output raster
 oldrst = originrst(inf)
-array2raster(outf,oldrst,interpolated,5)
+array2raster(outf,oldrst,interpolated,11)
 
 
 #imgplot_out = pl.imshow(interpolated)
@@ -153,6 +160,7 @@ array2raster(outf,oldrst,interpolated,5)
 #---
 # output raster file adjustment
 
+	
 
 
 
